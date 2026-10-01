@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChatGPT Replica</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #111827;
+        --panel-dark: #0f172a;
+        --surface: #1c2437;
+        --surface-soft: rgba(255,255,255,0.04);
+        --text: #edf3ff;
+        --muted: #a7b3cc;
+        --border: rgba(148,163,184,0.18);
+        --accent: #7c3aed;
+        --accent-2: #3b82f6;
+        --user: #111827;
+        --assistant: #1a2336;
+        --success: #22c55e;
+        --danger: #ef4444;
+      }
+
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: radial-gradient(circle at top, #121a2d 0%, var(--bg) 42%);
+        color: var(--text);
+        font-family: Inter, "Segoe UI", sans-serif;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .app {
+        width: min(1200px, 100%);
+        height: min(92vh, 900px);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: rgba(10, 14, 24, 0.85);
+        box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+        display: flex;
+        overflow: hidden;
+      }
+
+      .sidebar {
+        width: 300px;
+        background: rgba(17,24,39,0.92);
+        border-right: 1px solid var(--border);
+        padding: 18px 14px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .brand-mark {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 1.08rem;
+      }
+
+      .new-chat {
+        width: 100%;
+        border: 1px solid var(--border);
+        background: var(--surface-soft);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 12px 14px;
+        cursor: pointer;
+        margin-bottom: 18px;
+      }
+
+      .preset-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .preset {
+        width: 100%;
+        border: 1px solid transparent;
+        background: rgba(148,163,184,0.06);
+        color: var(--text);
+        text-align: left;
+        border-radius: 12px;
+        padding: 12px 12px;
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+
+      .preset:hover {
+        border-color: var(--border);
+        background: rgba(124, 58, 237, 0.12);
+      }
+
+      .chat {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .model-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      select {
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 10px;
+      }
+
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px 22px 18px;
+      }
+
+      .message-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .message-row.user {
+        justify-content: flex-end;
+      }
+
+      .avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: rgba(148,163,184,0.1);
+        color: var(--muted);
+        display: grid;
+        place-items: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .message-row.user .avatar {
+        order: 2;
+      }
+
+      .bubble {
+        max-width: min(72%, 760px);
+        padding: 14px 16px;
+        border-radius: 18px;
+        white-space: pre-wrap;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+      }
+
+      .message-row.user .bubble {
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+      }
+
+      .message-row.assistant .bubble {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--border);
+      }
+
+      .compose {
+        display: flex;
+        gap: 12px;
+        padding: 18px 22px 22px;
+        border-top: 1px solid var(--border);
+      }
+
+      textarea {
+        flex: 1;
+        min-height: 54px;
+        max-height: 220px;
+        resize: vertical;
+        background: rgba(15,23,42,0.8);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 16px;
+        padding: 14px 16px;
+        font: inherit;
+        outline: none;
+      }
+
+      textarea:focus {
+        border-color: rgba(124,58,237,0.7);
+        box-shadow: 0 0 0 3px rgba(124,58,237,0.16);
+      }
+
+      .send-button {
+        border: none;
+        border-radius: 16px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: white;
+        font-weight: 700;
+        min-width: 120px;
+        padding: 0 18px;
+        cursor: pointer;
+      }
+
+      .send-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .status {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+
+      .typing {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 78px;
+      }
+
+      .typing span {
+        width: 8px;
+        height: 8px;
+        background: rgba(255,255,255,0.75);
+        border-radius: 50%;
+        display: block;
+        animation: pulse 1.2s infinite ease-in-out;
+      }
+
+      .typing span:nth-child(2) { animation-delay: 0.15s; }
+      .typing span:nth-child(3) { animation-delay: 0.3s; }
+
+      @keyframes pulse {
+        0%, 80%, 100% { opacity: 0.2; transform: scale(0.9); }
+        40% { opacity: 1; transform: scale(1); }
+      }
+
+      @media (max-width: 900px) {
+        .app {
+          height: 100vh;
+          border-radius: 0;
+        }
+
+        .sidebar {
+          display: none;
+        }
+
+        .bubble {
+          max-width: 90%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">AI</div>
+          <h1>ChatGPT Replica</h1>
+        </div>
+
+        <button class="new-chat" id="newChat">+ New chat</button>
+
+        <div class="preset-list">
+          <button class="preset" data-prompt="Summarize this project in 3 bullet points.">Summarize this project in 3 bullet points.</button>
+          <button class="preset" data-prompt="Explain how to deploy this app to production.">Explain how to deploy this app to production.</button>
+          <button class="preset" data-prompt="Write a useful Python function to fetch JSON from an API.">Write a useful Python function to fetch JSON from an API.</button>
+          <button class="preset" data-prompt="Give me a clean JavaScript example of a debounce function.">Give me a clean JavaScript example of a debounce function.</button>
+        </div>
+      </aside>
+
+      <main class="chat">
+        <header class="topbar">
+          <div>
+            <div class="model-label">Model</div>
+            <select id="modelSelect">
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+            </select>
+          </div>
+        </header>
+
+        <section class="messages" id="messages"></section>
+
+        <div class="compose">
+          <textarea id="prompt" rows="1" placeholder="Ask anything..."></textarea>
+          <button class="send-button" id="sendBtn" type="button">Send</button>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const messagesEl = document.getElementById('messages');
+      const promptInput = document.getElementById('prompt');
+      const sendBtn = document.getElementById('sendBtn');
+      const modelSelect = document.getElementById('modelSelect');
+      const newChatBtn = document.getElementById('newChat');
+
+      const starterMessages = [
+        {
+          role: 'assistant',
+          content: 'Hello! I am a ChatGPT-style assistant. Ask me anything and I will answer as best I can using the configured AI model.'
+        }
+      ];
+
+      let messages = [...starterMessages];
+      let loading = false;
+
+      function renderMessages() {
+        messagesEl.innerHTML = '';
+        messages.forEach((msg, idx) => {
+          const row = document.createElement('div');
+          row.className = `message-row ${msg.role}`;
+
+          const avatar = document.createElement('div');
+          avatar.className = 'avatar';
+          avatar.textContent = msg.role === 'user' ? 'You' : 'AI';
+
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble';
+          bubble.textContent = msg.content;
+
+          row.appendChild(avatar);
+          row.appendChild(bubble);
+          messagesEl.appendChild(row);
+        });
+
+        if (loading) {
+          const row = document.createElement('div');
+          row.className = 'message-row assistant';
+
+          const avatar = document.createElement('div');
+          avatar.className = 'avatar';
+          avatar.textContent = 'AI';
+
+          const bubble = document.createElement('div');
+          bubble.className = 'bubble typing';
+          bubble.innerHTML = '<span></span><span></span><span></span>';
+
+          row.appendChild(avatar);
+          row.appendChild(bubble);
+          messagesEl.appendChild(row);
+        }
+
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      function setLoading(on) {
+        loading = on;
+        sendBtn.disabled = on || !promptInput.value.trim();
+        renderMessages();
+      }
+
+      function resetChat() {
+        messages = [...starterMessages];
+        renderMessages();
+        promptInput.value = '';
+        promptInput.focus();
+      }
+
+      function appendUserMessage(text) {
+        messages.push({ role: 'user', content: text });
+      }
+
+      async function sendMessage(textOverride) {
+        const text = (textOverride ?? promptInput.value).trim();
+        if (!text || loading) return;
+
+        appendUserMessage(text);
+        promptInput.value = '';
+        sendBtn.disabled = true;
+        setLoading(true);
+
+        try {
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer YOUR_OPENAI_API_KEY_HERE'
+            },
+            body: JSON.stringify({
+              model: modelSelect.value,
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a helpful AI assistant. Answer clearly, concisely, and practically. Use markdown formatting when useful.'
+                },
+                ...messages
+              ],
+              temperature: 0.7
+            })
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result?.error?.message || 'Unknown error from OpenAI API.');
+          }
+
+          const reply = result.choices?.[0]?.message?.content || 'No answer returned.';
+          messages.push({ role: 'assistant', content: reply });
+        } catch (err) {
+          messages.push({
+            role: 'assistant',
+            content: `I hit an issue: ${err.message}. Replace YOUR_OPENAI_API_KEY_HERE in the script with your valid API key to enable live answers.`
+          });
+        }
+
+        setLoading(false);
+        renderMessages();
+      }
+
+      sendBtn.addEventListener('click', () => sendMessage());
+
+      promptInput.addEventListener('input', () => {
+        sendBtn.disabled = loading || !promptInput.value.trim();
+      });
+
+      promptInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          sendMessage();
+        }
+      });
+
+      newChatBtn.addEventListener('click', resetChat);
+
+      document.querySelectorAll('.preset').forEach((button) => {
+        button.addEventListener('click', () => sendMessage(button.dataset.prompt));
+      });
+
+      renderMessages();
+      sendBtn.disabled = true;
+    </script>
+  </body>
+</html>
